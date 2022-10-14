@@ -1,0 +1,92 @@
+version: "3.8"
+
+services:
+  mysql:
+    # Matching version from https://console.cloud.google.com/sql/instances/db-replica-d/overview?project=compact-sylph-785
+    image: mysql:5.7.25
+    container_name: mysql
+    command: --sql-mode=NO_ENGINE_SUBSTITUTION
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: test_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - "/workspace/data/mysql:/var/lib/mysql:rw"
+    ports:
+      - "3306:3306"
+
+  consul:
+    # Matching version from https://github.com/quizlet/terraform-google-consul/blob/main/image/roles/consul/defaults/main.yml#L2
+    image: consul:1.10.0
+    container_name: consul
+    command:
+      ["agent", "-server", "-bootstrap-expect=1", "-client=0.0.0.0", "-ui"]
+    environment:
+      CONSUL_BIND_INTERFACE: eth0
+    volumes:
+      - "/workspace/data/consul:/consul/data:rw"
+    ports:
+      - "8500:8500"
+
+  memcached:
+    # Matching version from https://console.cloud.google.com/memorystore/memcached/locations/us-central1/instances/memcached-prod-instance-4/details?project=compact-sylph-785
+    image: memcached:1.5.16
+    container_name: memcached
+    ports:
+      - "11211:11211"
+
+  elasticsearch:
+    image: elasticsearch:7.8.0
+    container_name: es
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    networks:
+      - elastic
+
+  logstash:
+    image: logstash:7.8.0
+    container_name: log
+    environment:
+      discovery.seed_hosts: logstash
+      LS_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - ./logstash/pipeline/logstash-nginx.config:/usr/share/logstash/pipeline/logstash-nginx.config
+      - ./logstash/nginx.log:/home/nginx.log
+    ports:
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "5044:5044"
+      - "9600:9600"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic
+    command: logstash -f /usr/share/logstash/pipeline/logstash-nginx.config
+
+  kibana:
+    image: kibana:7.8.0
+    container_name: kib
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    driver: bridge
+    # default MTU size in docker-compose is 1500
+    driver_opts:
+      com.docker.network.driver.mtu: 1440
