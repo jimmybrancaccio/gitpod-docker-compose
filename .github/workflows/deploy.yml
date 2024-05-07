@@ -1,0 +1,22 @@
+name: Auto deploy to production
+
+on:
+  push:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: tailscale/github-action@v2
+        with:
+          version: 1.64.0
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - run: |
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' --chown=jimmy:jimmy . jimmy@hive:/home/jimmy/tmp
