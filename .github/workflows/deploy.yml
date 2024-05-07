@@ -19,4 +19,4 @@ jobs:
           tags: tag:ci
       
       - run: |
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' --chown=jimmy:jimmy . root@ubuntu-desktop-ts:/home/jimmy/tmp
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' --chown=jimmy:jimmy . jimmy@ubuntu-desktop-ts:/home/jimmy/tmp
