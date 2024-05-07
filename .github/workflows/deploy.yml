@@ -17,6 +17,6 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
-
+      
       - run: |
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' --chown=jimmy:jimmy . jimmy@hive:/home/jimmy/tmp
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' --chown=jimmy:jimmy . jimmy@ubuntu-desktop-ts:/home/jimmy/tmp
